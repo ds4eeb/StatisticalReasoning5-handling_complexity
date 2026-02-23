@@ -30,7 +30,8 @@ ways:
 
 Back when we introduced multiple regression in “Activity 10: Statistical
 Reasoning 2 - multiple regression” we looked at the Palmer Penguins
-dataset. Included in that activity was this paragraph:
+dataset. Included in that activity was this paragraph describing
+additive models:
 
 > **This is an additive model**, which means that that the effect of one
 > predictor is treated as independent of other predictors. Rephrased,
@@ -54,9 +55,9 @@ influences the effect of a second predictor on the response. Now, one
 predictor is *conditional* on another. For instance, imagine that for
 one species of penguin, increasing body mass leads to longer bills,
 while for a second species, increasing body mass leads to smaller bills.
-What is the effect of body mass on bill length? In this example, it’s
-*conditional*: if species A, then it’s positive, but if species B, it’s
-negative. Lots of ecology is like this: “It depends!”
+Is there a general effect of body mass on bill length? No, because it’s
+*conditional*: if species A, then it’s a positive effect, but if species
+B, it’s negative. Lots of ecology is like this: “It depends!”
 
 ------------------------------------------------------------------------
 
@@ -64,8 +65,8 @@ negative. Lots of ecology is like this: “It depends!”
 
 In this XKCD comic below, `productivity` is a function of the
 interaction between `power outage` (pre vs post outage) and the
-`reliance on internet for work`. In 1-2 sentences, describe the effect
-of how the power outage interacts with the reliance on internet on
+`reliance on internet for work`. In 1-2 sentences, describe how the
+power outage interacts with the reliance on internet to affect
 productivity.
 
 ![XKCD service outage](pictures/xkcd-3170-service-outage.png)
@@ -93,13 +94,201 @@ on the rate of bread rising to increase/decrease?
 - Education leads to higher income.
 - Gasoline makes a car go.
 
-==== ANSWER - Bread dough rises because of yeast. Temperature would
-increase the effect of yeast on bread - Education leads to higher
-income. Parental income would make the effect of education on income
-stronger - Gasoline makes a car go. Engine strength would make a car if
-gas \> 0, but wouldn’t be effective if gas = 0 ==== END ANSWER
+==== ANSWER
+
+- Bread dough rises because of yeast. Temperature would increase the
+  effect of yeast on bread
+- Education leads to higher income. Parental income would make the
+  effect of education on income stronger
+- Gasoline makes a car go. Engine strength would make a car if gas \> 0,
+  but wouldn’t be effective if gas = 0
+
+==== END ANSWER
 
 ------------------------------------------------------------------------
+
+We’re going to continue working with the Palmer penguins data to
+illustrate how to interpret interactive models. Let’s set up:
+
+``` r
+library(tidyverse) # For data wrangling
+library(brms) # For stats
+library(palmerpenguins) # For the data
+```
+
+``` r
+# Store the data as penguins
+penguins <- palmerpenguins::penguins
+```
+
+``` r
+# Refresh by looking at the column names
+penguins %>% colnames
+```
+
+    [1] "species"           "island"            "bill_length_mm"   
+    [4] "bill_depth_mm"     "flipper_length_mm" "body_mass_g"      
+    [7] "sex"               "year"             
+
+------------------------------------------------------------------------
+
+### Q1.3 Filter the dataset to only include Adelie and Chinstrap penguins
+
+Let’s make our lives simple today by only looking at two species: filter
+the `penguins` dataset to only include Adelie and Chinstrap penguins.
+Use the functions that we learned in the first half of the quarter.
+
+===== ANSWER
+
+``` r
+penguins.AC <- penguins %>% 
+  filter(species == "Adelie" | species == "Chinstrap")
+```
+
+===== END ANSWER
+
+------------------------------------------------------------------------
+
+### Q1.4 Make a plot of flipper length \~ body mass and species
+
+Using ggplot and geom_smooth, make a plot of flipper length on the y
+axis with body mass on the x, and color the points by species. Put a
+geom_smooth() line on top of the points with a “linear model” (lm) line.
+
+===== ANSWER
+
+``` r
+penguins.AC %>% 
+  ggplot(aes(x = body_mass_g, y = flipper_length_mm,
+             color = species)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+![](README_files/figure-commonmark/unnamed-chunk-5-1.png)
+
+===== END ANSWER
+
+------------------------------------------------------------------------
+
+### Q1.5 Describe the relationships
+
+Describe in 1-2 sentences whether you think the relationship you see is
+interactive or additive. In other words, do you think that the effect of
+body mass on flipper length is conditional on species? Why do you think
+this?
+
+------------------------------------------------------------------------
+
+Additive model
+
+``` r
+# flipper length by body mass and species - ADDITIVE model
+m.flip.mass.spp.additive <- 
+  brm(data = penguins.AC, # Give the model the penguins data
+      # Choose a gaussian (normal) distribution
+      family = gaussian,
+      # Specify the model here. 
+      flipper_length_mm ~ 1 + species + body_mass_g,
+      # Here's where you specify parameters for executing the Markov chains
+      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
+      iter = 2000, warmup = 1000, chains = 4, cores = 4,
+      # Setting the "seed" determines which random numbers will get sampled.
+      # In this case, it makes the randomness of the Markov chain runs reproducible 
+      # (so that both of us get the exact same results when running the model)
+      seed = 4,
+      # Save the fitted model object as output - helpful for reloading in the output later
+      file = "output/m.flip.mass.spp.additive")
+```
+
+``` r
+plot(m.flip.mass.spp.additive)
+```
+
+![](README_files/figure-commonmark/unnamed-chunk-7-1.png)
+
+``` r
+print(m.flip.mass.spp.additive, digits = 4)
+```
+
+     Family: gaussian 
+      Links: mu = identity 
+    Formula: flipper_length_mm ~ 1 + species + body_mass_g 
+       Data: penguins.AC (Number of observations: 219) 
+      Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+             total post-warmup draws = 4000
+
+    Regression Coefficients:
+                     Estimate Est.Error l-95% CI u-95% CI   Rhat Bulk_ESS Tail_ESS
+    Intercept        160.5608    3.3143 154.1315 167.1490 1.0020     4423     3218
+    speciesChinstrap   5.6337    0.8327   4.0544   7.2579 1.0006     2664     2029
+    body_mass_g        0.0079    0.0009   0.0062   0.0097 1.0023     4431     2834
+
+    Further Distributional Parameters:
+          Estimate Est.Error l-95% CI u-95% CI   Rhat Bulk_ESS Tail_ESS
+    sigma   5.7928    0.2830   5.2685   6.4121 1.0006     3026     2300
+
+    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    and Tail_ESS are effective sample size measures, and Rhat is the potential
+    scale reduction factor on split chains (at convergence, Rhat = 1).
+
+Interactive model
+
+``` r
+# flipper length by body mass and species - INTERACTIVE model
+m.flip.mass.spp.interactive <- 
+  brm(data = penguins.AC, # Give the model the penguins data
+      # Choose a gaussian (normal) distribution
+      family = gaussian,
+      # Specify the model here. 
+      flipper_length_mm ~ 1 + species*body_mass_g,
+      # Here's where you specify parameters for executing the Markov chains
+      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
+      iter = 2000, warmup = 1000, chains = 4, cores = 4,
+      # Setting the "seed" determines which random numbers will get sampled.
+      # In this case, it makes the randomness of the Markov chain runs reproducible 
+      # (so that both of us get the exact same results when running the model)
+      seed = 4,
+      # Save the fitted model object as output - helpful for reloading in the output later
+      file = "output/m.flip.mass.spp.interactive")
+```
+
+``` r
+plot(m.flip.mass.spp.interactive)
+```
+
+![](README_files/figure-commonmark/unnamed-chunk-9-1.png)
+
+``` r
+print(m.flip.mass.spp.interactive, digits = 4)
+```
+
+     Family: gaussian 
+      Links: mu = identity 
+    Formula: flipper_length_mm ~ 1 + species * body_mass_g 
+       Data: penguins.AC (Number of observations: 219) 
+      Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+             total post-warmup draws = 4000
+
+    Regression Coefficients:
+                                 Estimate Est.Error l-95% CI u-95% CI   Rhat
+    Intercept                    165.1733    3.8972 157.5926 172.5012 1.0027
+    speciesChinstrap             -13.7163    7.8585 -29.1550   1.9976 1.0032
+    body_mass_g                    0.0067    0.0010   0.0047   0.0088 1.0025
+    speciesChinstrap:body_mass_g   0.0052    0.0021   0.0010   0.0093 1.0031
+                                 Bulk_ESS Tail_ESS
+    Intercept                        2927     2576
+    speciesChinstrap                 1614     1796
+    body_mass_g                      2957     2678
+    speciesChinstrap:body_mass_g     1634     1850
+
+    Further Distributional Parameters:
+          Estimate Est.Error l-95% CI u-95% CI   Rhat Bulk_ESS Tail_ESS
+    sigma   5.7372    0.2840   5.2122   6.3122 1.0057     2273     2068
+
+    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    and Tail_ESS are effective sample size measures, and Rhat is the potential
+    scale reduction factor on split chains (at convergence, Rhat = 1).
 
 ------------------------------------------------------------------------
 
