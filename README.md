@@ -75,16 +75,6 @@ productivity.
 
 ![XKCD service outage](pictures/xkcd-3170-service-outage.png)
 
-==== ANSWER
-
-A power outage increases the productivity of people who do not rely on
-internet, but decreases the productivity of people who do rely on
-internet (or similar - really there’s an effect on the intercept vs an
-effect on the slope, but that’s not important here; it’s more of a vibes
-question)
-
-==== END ANSWER
-
 ------------------------------------------------------------------------
 
 ### Q1.2 What additional variable would lead to an interaction?
@@ -97,17 +87,6 @@ on the rate of bread rising to increase/decrease?
 - Bread dough rises because of yeast.
 - Education leads to higher income.
 - Gasoline makes a car go.
-
-==== ANSWER
-
-- Bread dough rises because of yeast. Temperature would increase the
-  effect of yeast on bread
-- Education leads to higher income. Parental income would make the
-  effect of education on income stronger
-- Gasoline makes a car go. Engine strength would make a car if gas \> 0,
-  but wouldn’t be effective if gas = 0
-
-==== END ANSWER
 
 ------------------------------------------------------------------------
 
@@ -146,15 +125,6 @@ the `penguins` dataset to only include Adelie and Chinstrap penguins.
 Use the functions that we learned in the first half of the quarter.
 Store the new dataframe as `penguins.AC`
 
-===== ANSWER
-
-``` r
-penguins.AC <- penguins %>% 
-  filter(species == "Adelie" | species == "Chinstrap")
-```
-
-===== END ANSWER
-
 ------------------------------------------------------------------------
 
 ### Q1.4 Make a plot of flipper length \~ body mass and species
@@ -162,20 +132,6 @@ penguins.AC <- penguins %>%
 Using ggplot and geom_smooth, make a plot of flipper length on the y
 axis with body mass on the x, and color the points by species. Put a
 geom_smooth() line on top of the points with a “linear model” (lm) line.
-
-===== ANSWER
-
-``` r
-penguins.AC %>% 
-  ggplot(aes(x = body_mass_g, y = flipper_length_mm,
-             color = species)) +
-  geom_point() +
-  geom_smooth(method = "lm")
-```
-
-![](README_files/figure-commonmark/unnamed-chunk-5-1.png)
-
-===== END ANSWER
 
 ------------------------------------------------------------------------
 
@@ -188,7 +144,7 @@ this?
 
 ------------------------------------------------------------------------
 
-## Additive model
+## Additive model - categorical + continuous
 
 ------------------------------------------------------------------------
 
@@ -196,40 +152,11 @@ this?
 
 Run and assess an additive model of
 `flipper_length_mm ~ 0 + species + body_mass_g` (the zero allows will
-provide separate intercepts for each species). In your assessment,
-describe whether or not you think the model ran well.
+provide separate intercepts for each species). Store the model output as
+`m.flip.mass.spp.additive`
 
-===== ANSWER
-
-``` r
-# flipper length by body mass and species - ADDITIVE model
-m.flip.mass.spp.additive <- 
-  brm(data = penguins.AC, # Give the model the penguins data
-      # Choose a gaussian (normal) distribution
-      family = gaussian,
-      # Specify the model here. 
-      flipper_length_mm ~ 0 + species + body_mass_g,
-      # Here's where you specify parameters for executing the Markov chains
-      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
-      iter = 2000, warmup = 1000, chains = 4, cores = 4,
-      # Setting the "seed" determines which random numbers will get sampled.
-      # In this case, it makes the randomness of the Markov chain runs reproducible 
-      # (so that both of us get the exact same results when running the model)
-      seed = 4,
-      # Save the fitted model object as output - helpful for reloading in the output later
-      file = "output/m.flip.mass.spp.additive")
-```
-
-Assessment: The Rhat is 1, the chains look overlapping and flat, and the
-posterior distributions look smooth, so it looks good.
-
-``` r
-plot(m.flip.mass.spp.additive)
-```
-
-![](README_files/figure-commonmark/unnamed-chunk-7-1.png)
-
-===== END ANSWER
+In your assessment, describe whether or not you think the model ran
+well.
 
 ------------------------------------------------------------------------
 
@@ -244,8 +171,6 @@ preds.add <- predict_response(m.flip.mass.spp.additive,
 
 plot(preds.add, show_data = TRUE)
 ```
-
-![](README_files/figure-commonmark/unnamed-chunk-8-1.png)
 
 ------------------------------------------------------------------------
 
@@ -265,44 +190,9 @@ summary() function (at least for brms model outputs):
 
 `print(model.name, digits = 4`
 
-===== ANSWER
-
-1.  Chinstrap have larger flippers, but about 5.6mm
-2.  For every gram of body mass, flipper length increases by 0.0079mm.
-    This effect is likely different from zero, as the 95%CI range from
-    0.006 to 0.0096, which does not include zero.
-3.  The effect in this additive model does not vary per species.
-
-``` r
-print(m.flip.mass.spp.additive, digits = 4)
-```
-
-     Family: gaussian 
-      Links: mu = identity 
-    Formula: flipper_length_mm ~ 0 + species + body_mass_g 
-       Data: penguins.AC (Number of observations: 219) 
-      Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-             total post-warmup draws = 4000
-
-    Regression Coefficients:
-                     Estimate Est.Error l-95% CI u-95% CI   Rhat Bulk_ESS Tail_ESS
-    speciesAdelie    160.6176    3.4166 154.1805 167.6857 1.0003     1306     1202
-    speciesChinstrap 166.2244    3.4955 159.7143 173.4380 1.0006     1311     1184
-    body_mass_g        0.0079    0.0009   0.0060   0.0096 1.0003     1308     1259
-
-    Further Distributional Parameters:
-          Estimate Est.Error l-95% CI u-95% CI   Rhat Bulk_ESS Tail_ESS
-    sigma   5.7969    0.2860   5.2679   6.3961 1.0016     1470     1290
-
-    Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-    and Tail_ESS are effective sample size measures, and Rhat is the potential
-    scale reduction factor on split chains (at convergence, Rhat = 1).
-
-===== END ANSWER
-
 ------------------------------------------------------------------------
 
-## Interactive model
+## Interactive model - categorical + continuous
 
 ------------------------------------------------------------------------
 
@@ -380,6 +270,10 @@ length-body mass relationship for Adelie is 0.0067mm/g (95%CI from
 0.0047-0.0086) while for Chinstrap it’s nearly doubled at 0.0120mm/g
 (95%CI from 0.0084-0.0158).
 
+------------------------------------------------------------------------
+
+## Plot posteriors
+
 Are the two slopes different from one another? If you look at the 95%
 CIs, the ranges barely overlap: Adelie goes from 0.0047-0.0086 while
 Chinstrap goes from 0.0084-0.0158. We can look at the distributions of
@@ -390,12 +284,12 @@ model:
 plot(m.flip.mass.spp.interactive)
 ```
 
-![](README_files/figure-commonmark/unnamed-chunk-12-1.png)
+![](README_files/figure-commonmark/unnamed-chunk-7-1.png)
 
-It’s hard to tell how much the two slopes overlap though, because the
-scales are different. Here’s some fun code to extract the raw posterior
-values that went into this plot and make our own plot with the estimates
-side-by-side:
+However, it’s hard to tell how much the distributions for the two slopes
+overlap though, because the scales are different. Here’s some fun code
+to extract the raw posterior values that went into this plot and make
+our own plot with the estimates side-by-side:
 
 ``` r
 # Store posterior parameter estimates
@@ -417,12 +311,14 @@ model_posterior_samples %>%
   xlim(0, NA)
 ```
 
-![](README_files/figure-commonmark/unnamed-chunk-13-1.png)
+![](README_files/figure-commonmark/unnamed-chunk-8-1.png)
 
 There is only a bit each distribution that overlap, so I feel confident
 that the estimates are different, and thus we have two different slopes.
 
 ------------------------------------------------------------------------
+
+## Plot model predictions
 
 Let’s plot our model predictions:
 
@@ -433,7 +329,7 @@ preds.int <- predict_response(m.flip.mass.spp.interactive,
 plot(preds.int, show_data = TRUE)
 ```
 
-![](README_files/figure-commonmark/unnamed-chunk-14-1.png)
+![](README_files/figure-commonmark/unnamed-chunk-9-1.png)
 
 ------------------------------------------------------------------------
 
@@ -443,75 +339,70 @@ Using what you learned last week, which model (additive vs interactive)
 has better predictive power? Back your answer up with PSIS and WAIC
 values.
 
-==== ANSWER
+------------------------------------------------------------------------
 
-``` r
-loo(m.flip.mass.spp.additive)
-```
-
-
-    Computed from 4000 by 219 log-likelihood matrix.
-
-             Estimate   SE
-    elpd_loo   -697.6 11.1
-    p_loo         4.0  0.5
-    looic      1395.2 22.3
-    ------
-    MCSE of elpd_loo is 0.0.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.3, 1.0]).
-
-    All Pareto k estimates are good (k < 0.7).
-    See help('pareto-k-diagnostic') for details.
-
-``` r
-loo(m.flip.mass.spp.interactive)
-```
-
-
-    Computed from 4000 by 219 log-likelihood matrix.
-
-             Estimate   SE
-    elpd_loo   -695.5 11.2
-    p_loo         5.0  0.7
-    looic      1391.0 22.4
-    ------
-    MCSE of elpd_loo is 0.1.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.1]).
-
-    All Pareto k estimates are good (k < 0.7).
-    See help('pareto-k-diagnostic') for details.
-
-``` r
-waic(m.flip.mass.spp.additive)
-```
-
-
-    Computed from 4000 by 219 log-likelihood matrix.
-
-              Estimate   SE
-    elpd_waic   -697.6 11.1
-    p_waic         4.0  0.5
-    waic        1395.2 22.3
-
-``` r
-waic(m.flip.mass.spp.interactive)
-```
-
-
-    Computed from 4000 by 219 log-likelihood matrix.
-
-              Estimate   SE
-    elpd_waic   -695.5 11.2
-    p_waic         5.0  0.7
-    waic        1391.0 22.4
-
-In both cases, the interactive model has better predictive power: the
-PSIS and WAIC are both 1395.2 for the additive model and 1391.0 for the
-interactive model.
-
-==== END ANSWER
+# 2. Do it yourself
 
 ------------------------------------------------------------------------
+
+Now it’s your turn to run an *interactive* model. Using the
+`penguins.AC` filtered dataset, model how `bill_length_mm` varies as a
+function of `bill_depth_mm` interacting with `species`.
+
+------------------------------------------------------------------------
+
+### Q2.1 Make a graph
+
+Make a graph that reflects the model you are about to run
+
+------------------------------------------------------------------------
+
+### Q2.2 Set up and run an *interactive* model
+
+Make sure you store your model output as something informative to you.
+
+------------------------------------------------------------------------
+
+### Q2.3 Assess the model
+
+Assess whether the model ran correctly by looking at R hat, the chains,
+and the posterior distributions. Describe your thought process about
+whether the model ran correctly in 1-2 sentences.
+
+------------------------------------------------------------------------
+
+### Q2.4 Plot model predictions
+
+Plot the model predictions using `predict_response()`
+
+------------------------------------------------------------------------
+
+### Q2.5 Plot posteriors
+
+Plot the model posteriors for the two slope values by adapting the code
+provided in the “Plot posteriors” to your current model. Ask Calvin or
+Malin if you need help!
+
+------------------------------------------------------------------------
+
+### Q2.6 Interpret the model
+
+Interpret your model by answering:
+
+1.  How does bill depth influence bill length, and how does it differ by
+    species? Remember to describe the effect using the units to make it
+    biologically meaningful.
+2.  Does it seem like the slope estimates are different from zero? Why?
+3.  Does it seem like the slope estimates are different from one another
+    (e.g. do Adelie and Chinstrap penguins have different slopes)? Why?
+
+------------------------------------------------------------------------
+
+### Q2.7 Which model has better predictive power?
+
+Using what you learned last week, which model (additive vs interactive)
+has better predictive power? Back your answer up with PSIS and WAIC
+values.
 
 ------------------------------------------------------------------------
 
