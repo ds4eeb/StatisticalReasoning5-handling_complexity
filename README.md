@@ -1,4 +1,4 @@
-Activity 13: Statistical reasoning 5: handling complexity
+Activity 13: Statistical reasoning 5: handling complexity using interactions
 ================
 
 Welcome! This is the fifth statistical reasoning activity. The goals of
