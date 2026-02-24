@@ -46,11 +46,7 @@ In this XKCD comic below, `productivity` is a function of the interaction betwee
 
 ![XKCD service outage](pictures/xkcd-3170-service-outage.png)
 
-==== ANSWER
 
-A power outage increases the productivity of people who do not rely on internet, but decreases the productivity of people who do rely on internet (or similar - really there's an effect on the intercept vs an effect on the slope, but that's not important here; it's more of a vibes question)
-
-==== END ANSWER
 
 ------------------------------------------------------------------------
 
@@ -62,13 +58,6 @@ For each of the causal relationships below, name a hypothetical third variable t
 -   Education leads to higher income.
 -   Gasoline makes a car go.
 
-==== ANSWER
-
--   Bread dough rises because of yeast. Temperature would increase the effect of yeast on bread
--   Education leads to higher income. Parental income would make the effect of education on income stronger
--   Gasoline makes a car go. Engine strength would make a car if gas \> 0, but wouldn't be effective if gas = 0
-
-==== END ANSWER
 
 ------------------------------------------------------------------------
 
@@ -99,14 +88,6 @@ penguins %>% colnames()
 
 Let's make our lives simple today by only looking at two species: filter the `penguins` dataset to only include Adelie and Chinstrap penguins. Use the functions that we learned in the first half of the quarter. Store the new dataframe as `penguins.AC`
 
-===== ANSWER
-
-```{r}
-penguins.AC <- penguins %>% 
-  filter(species == "Adelie" | species == "Chinstrap")
-```
-
-===== END ANSWER
 
 ------------------------------------------------------------------------
 
@@ -114,17 +95,6 @@ penguins.AC <- penguins %>%
 
 Using ggplot and geom_smooth, make a plot of flipper length on the y axis with body mass on the x, and color the points by species. Put a geom_smooth() line on top of the points with a "linear model" (lm) line.
 
-===== ANSWER
-
-```{r}
-penguins.AC %>% 
-  ggplot(aes(x = body_mass_g, y = flipper_length_mm,
-             color = species)) +
-  geom_point() +
-  geom_smooth(method = "lm")
-```
-
-===== END ANSWER
 
 ------------------------------------------------------------------------
 
@@ -134,48 +104,22 @@ Describe in 1-2 sentences whether you think the relationship you see is interact
 
 ------------------------------------------------------------------------
 
-## Additive model
+## Additive model - categorical + continuous
 
 ------
 
 ### Q1.6 Run and assess an additive model 
 
-Run and assess an additive model of `flipper_length_mm ~ 0 + species + body_mass_g` (the zero allows will provide separate intercepts for each species). In your assessment, describe whether or not you think the model ran well.
+Run and assess an additive model of `flipper_length_mm ~ 0 + species + body_mass_g` (the zero allows will provide separate intercepts for each species). Store the model output as `m.flip.mass.spp.additive`
 
-===== ANSWER
+In your assessment, describe whether or not you think the model ran well.
 
-```{r}
-# flipper length by body mass and species - ADDITIVE model
-m.flip.mass.spp.additive <- 
-  brm(data = penguins.AC, # Give the model the penguins data
-      # Choose a gaussian (normal) distribution
-      family = gaussian,
-      # Specify the model here. 
-      flipper_length_mm ~ 0 + species + body_mass_g,
-      # Here's where you specify parameters for executing the Markov chains
-      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
-      iter = 2000, warmup = 1000, chains = 4, cores = 4,
-      # Setting the "seed" determines which random numbers will get sampled.
-      # In this case, it makes the randomness of the Markov chain runs reproducible 
-      # (so that both of us get the exact same results when running the model)
-      seed = 4,
-      # Save the fitted model object as output - helpful for reloading in the output later
-      file = "output/m.flip.mass.spp.additive")
-```
-
-Assessment: The Rhat is 1, the chains look overlapping and flat, and the posterior distributions look smooth, so it looks good.
-
-```{r}
-plot(m.flip.mass.spp.additive)
-```
-
-===== END ANSWER
 
 -------
 
 Let's plot the additive model's predictions. Remember, the additive model does not allow for the two effects to interact. Graphically, this means that it does not allow the slope of one effect to change with another effect.
 
-```{r}
+```{r eval=FALSE}
 preds.add <- predict_response(m.flip.mass.spp.additive,
                           terms = c("body_mass_g", "species"))
 
@@ -196,22 +140,12 @@ Something I learned this week is that you can print out more decimal places in t
 
 `print(model.name, digits = 4`
 
-===== ANSWER
 
-1. Chinstrap have larger flippers, but about 5.6mm
-2. For every gram of body mass, flipper length increases by 0.0079mm. This effect is likely different from zero, as the 95%CI range from 0.006 to 0.0096, which does not include zero.
-3. The effect in this additive model does not vary per species.
-
-```{r}
-print(m.flip.mass.spp.additive, digits = 4)
-```
-
-===== END ANSWER
 
 --------
 
 
-## Interactive model
+## Interactive model - categorical + continuous
 
 --------
 
@@ -258,13 +192,17 @@ We now have four terms in our model:
 
 It looks like both of our slopes are different from zero; the flipper length-body mass relationship for Adelie is 0.0067mm/g (95%CI from 0.0047-0.0086) while for Chinstrap it's nearly doubled at 0.0120mm/g (95%CI from 0.0084-0.0158). 
 
+------
+
+## Plot posteriors
+
 Are the two slopes different from one another? If you look at the 95% CIs, the ranges barely overlap: Adelie goes from 0.0047-0.0086 while Chinstrap goes from 0.0084-0.0158. We can look at the distributions of the posterior estimates via the plot function that we use to assess the model:
 
 ```{r}
 plot(m.flip.mass.spp.interactive)
 ```
 
-It's hard to tell how much the two slopes overlap though, because the scales are different. Here's some fun code to extract the raw posterior values that went into this plot and make our own plot with the estimates side-by-side:
+However, it's hard to tell how much the distributions for the two slopes overlap though, because the scales are different. Here's some fun code to extract the raw posterior values that went into this plot and make our own plot with the estimates side-by-side:
 
 ```{r}
 # Store posterior parameter estimates
@@ -291,6 +229,8 @@ There is only a bit each distribution that overlap, so I feel confident that the
 
 -------
 
+## Plot model predictions
+
 Let's plot our model predictions:
 
 ```{r}
@@ -307,23 +247,66 @@ plot(preds.int, show_data = TRUE)
 
 Using what you learned last week, which model (additive vs interactive) has better predictive power? Back your answer up with PSIS and WAIC values.
 
-==== ANSWER
-
-```{r}
-loo(m.flip.mass.spp.additive)
-loo(m.flip.mass.spp.interactive)
-```
-
-```{r}
-waic(m.flip.mass.spp.additive)
-waic(m.flip.mass.spp.interactive)
-```
-
-In both cases, the interactive model has better predictive power: the PSIS and WAIC are both 1395.2 for the additive model and 1391.0 for the interactive model.
-
-==== END ANSWER
 
 -------
+
+# 2. Do it yourself
+
+-------
+
+Now it's your turn to run an *interactive* model. Using the `penguins.AC` filtered dataset, model how `bill_length_mm` varies as a function of `bill_depth_mm` interacting with `species`.
+
+-------
+
+### Q2.1 Make a graph
+
+Make a graph that reflects the model you are about to run
+
+-------
+
+### Q2.2 Set up and run an *interactive* model
+
+Make sure you store your model output as something informative to you.
+
+
+------------------------------------------------------------------------
+
+### Q2.3 Assess the model
+
+Assess whether the model ran correctly by looking at R hat, the chains, and the posterior distributions. Describe your thought process about whether the model ran correctly in 1-2 sentences.
+
+
+------------------------------------------------------------------------
+
+
+### Q2.4 Plot model predictions
+
+Plot the model predictions using `predict_response()`
+
+---------
+
+
+### Q2.5 Plot posteriors
+
+Plot the model posteriors for the two slope values by adapting the code provided in the "Plot posteriors" to your current model. Ask Calvin or Malin if you need help!
+
+---------
+
+### Q2.6 Interpret the model
+
+Interpret your model by answering:
+
+1.    How does bill depth influence bill length, and how does it differ by species? Remember to describe the effect using the units to make it biologically meaningful.
+2.    Does it seem like the slope estimates are different from zero? Why?
+3.    Does it seem like the slope estimates are different from one another (e.g. do Adelie and Chinstrap penguins have different slopes)? Why?
+
+
+-------
+
+### Q2.7 Which model has better predictive power?
+
+Using what you learned last week, which model (additive vs interactive) has better predictive power? Back your answer up with PSIS and WAIC values.
+
 
 ------------------------------------------------------------------------
 
